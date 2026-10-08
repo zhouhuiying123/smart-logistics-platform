@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  ASSIGNED
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum TaskStatus {
+  CREATED
+  ASSIGNED
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum VehicleStatus {
+  IDLE
+  ON_DUTY
+  MAINTENANCE
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  name            String
+  phone           String
+  address         String
+  lng             Float
+  lat             Float
+  timeWindowStart Int
+  timeWindowEnd   Int
+  serviceTime     Int
+  orders          Order[]
+  createdAt       DateTime @default(now())
+}
+
+model Order {
+  id          Int        @id @default(autoincrement())
+  customerId  Int
+  customer    Customer   @relation(fields: [customerId], references: [id])
+  weight      Float
+  volume      Float
+  status      OrderStatus @default(PENDING)
+  priority    Int        @default(0)
+  stops       DispatchStop[]
+  createdAt   DateTime   @default(now())
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model Vehicle {
+  id           Int           @id @default(autoincrement())
+  plate        String        @unique
+  capacityW    Float
+  capacityV    Float
+  status       VehicleStatus @default(IDLE)
+  tasks        DispatchTask[]
+  createdAt    DateTime      @default(now())
+}
+
+model Driver {
+  id        Int            @id @default(autoincrement())
+  name      String
+  phone     String
+  license   String         @unique
+  tasks     DispatchTask[]
+  createdAt DateTime       @default(now())
+}
+
+model DispatchTask {
+  id          Int            @id @default(autoincrement())
+  vehicleId   Int
+  vehicle     Vehicle        @relation(fields: [vehicleId], references: [id])
+  driverId    Int
+  driver      Driver         @relation(fields: [driverId], references: [id])
+  status      TaskStatus     @default(CREATED)
+  startTime   DateTime?
+  endTime     DateTime?
+  totalDist   Float?
+  totalCost   Float?
+  stops       DispatchStop[]
+  createdAt   DateTime       @default(now())
+
+  @@index([vehicleId])
+  @@index([driverId])
+}
+
+model DispatchStop {
+  id       Int          @id @default(autoincrement())
+  taskId   Int
+  task     DispatchTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  orderId  Int
+  order    Order        @relation(fields: [orderId], references: [id])
+  seq      Int
+  lng      Float
+  lat      Float
+  arrived  Boolean      @default(false)
+
+  @@index([taskId])
+  @@index([orderId])
+}
