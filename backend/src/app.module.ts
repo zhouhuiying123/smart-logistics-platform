@@ -8,6 +8,7 @@ import { OrdersModule } from './orders/orders.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { DriversModule } from './drivers/drivers.module';
 import { DispatchTasksModule } from './dispatch-tasks/dispatch-tasks.module';
+import { VrpModule } from './vrp/vrp.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DispatchTasksModule } from './dispatch-tasks/dispatch-tasks.module';
     VehiclesModule,
     DriversModule,
     DispatchTasksModule,
+    VrpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

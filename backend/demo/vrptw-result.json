@@ -1,0 +1,192 @@
+{
+  "algorithm": "VRPTW-GA",
+  "status": "FOUND",
+  "routes": [
+    {
+      "vehicleId": 1,
+      "orderIds": [
+        1,
+        2,
+        3
+      ],
+      "totalWeight": 300,
+      "totalVolume": 3,
+      "totalDistance": 6037.69809285,
+      "schedule": [
+        {
+          "arrivalTime": 481.70609980362,
+          "serviceStartTime": 481.70609980362,
+          "departureTime": 491.70609980362,
+          "waitingMinutes": 0,
+          "lateMinutes": 0
+        },
+        {
+          "arrivalTime": 494.5089715519,
+          "serviceStartTime": 494.5089715519,
+          "departureTime": 504.5089715519,
+          "waitingMinutes": 0,
+          "lateMinutes": 0
+        },
+        {
+          "arrivalTime": 507.3116917363,
+          "serviceStartTime": 507.3116917363,
+          "departureTime": 517.3116917363,
+          "waitingMinutes": 0,
+          "lateMinutes": 0
+        }
+      ],
+      "endTime": 522.0753961857,
+      "totalCost": null,
+      "stops": [
+        {
+          "seq": 1,
+          "orderId": 1,
+          "customerId": 1,
+          "lng": 116.41,
+          "lat": 39.9,
+          "arrivalTime": 481.70609980362,
+          "serviceStartTime": 481.70609980362,
+          "departureTime": 491.70609980362,
+          "waitingMinutes": 0,
+          "lateMinutes": 0,
+          "timeWindowStart": 480,
+          "timeWindowEnd": 1080,
+          "serviceTime": 10
+        },
+        {
+          "seq": 2,
+          "orderId": 2,
+          "customerId": 2,
+          "lng": 116.42,
+          "lat": 39.91,
+          "arrivalTime": 494.5089715519,
+          "serviceStartTime": 494.5089715519,
+          "departureTime": 504.5089715519,
+          "waitingMinutes": 0,
+          "lateMinutes": 0,
+          "timeWindowStart": 480,
+          "timeWindowEnd": 1080,
+          "serviceTime": 10
+        },
+        {
+          "seq": 3,
+          "orderId": 3,
+          "customerId": 3,
+          "lng": 116.41,
+          "lat": 39.92,
+          "arrivalTime": 507.3116917363,
+          "serviceStartTime": 507.3116917363,
+          "departureTime": 517.3116917363,
+          "waitingMinutes": 0,
+          "lateMinutes": 0,
+          "timeWindowStart": 480,
+          "timeWindowEnd": 1080,
+          "serviceTime": 10
+        }
+      ]
+    },
+    {
+      "vehicleId": 2,
+      "orderIds": [
+        4,
+        5,
+        6
+      ],
+      "totalWeight": 300,
+      "totalVolume": 3,
+      "totalDistance": 6037.69809285,
+      "schedule": [
+        {
+          "arrivalTime": 481.70609980362,
+          "serviceStartTime": 481.70609980362,
+          "departureTime": 491.70609980362,
+          "waitingMinutes": 0,
+          "lateMinutes": 0
+        },
+        {
+          "arrivalTime": 494.5089715519,
+          "serviceStartTime": 494.5089715519,
+          "departureTime": 504.5089715519,
+          "waitingMinutes": 0,
+          "lateMinutes": 0
+        },
+        {
+          "arrivalTime": 507.3116917363,
+          "serviceStartTime": 507.3116917363,
+          "departureTime": 517.3116917363,
+          "waitingMinutes": 0,
+          "lateMinutes": 0
+        }
+      ],
+      "endTime": 522.0753961857,
+      "totalCost": null,
+      "stops": [
+        {
+          "seq": 1,
+          "orderId": 4,
+          "customerId": 4,
+          "lng": 116.39,
+          "lat": 39.9,
+          "arrivalTime": 481.70609980362,
+          "serviceStartTime": 481.70609980362,
+          "departureTime": 491.70609980362,
+          "waitingMinutes": 0,
+          "lateMinutes": 0,
+          "timeWindowStart": 480,
+          "timeWindowEnd": 1080,
+          "serviceTime": 10
+        },
+        {
+          "seq": 2,
+          "orderId": 5,
+          "customerId": 5,
+          "lng": 116.38,
+          "lat": 39.91,
+          "arrivalTime": 494.5089715519,
+          "serviceStartTime": 494.5089715519,
+          "departureTime": 504.5089715519,
+          "waitingMinutes": 0,
+          "lateMinutes": 0,
+          "timeWindowStart": 480,
+          "timeWindowEnd": 1080,
+          "serviceTime": 10
+        },
+        {
+          "seq": 3,
+          "orderId": 6,
+          "customerId": 6,
+          "lng": 116.39,
+          "lat": 39.92,
+          "arrivalTime": 507.3116917363,
+          "serviceStartTime": 507.3116917363,
+          "departureTime": 517.3116917363,
+          "waitingMinutes": 0,
+          "lateMinutes": 0,
+          "timeWindowStart": 480,
+          "timeWindowEnd": 1080,
+          "serviceTime": 10
+        }
+      ]
+    }
+  ],
+  "unassignedOrderIds": [],
+  "totalDistance": 12075.3961857,
+  "totalLateMinutes": 0,
+  "objectiveScore": 12075.3961857,
+  "usedVehicleCount": 2,
+  "distanceUnit": "m",
+  "previewOnly": true,
+  "distanceModel": "SPHERICAL",
+  "returnToDepot": true,
+  "depot": {
+    "lng": 116.4,
+    "lat": 39.9
+  },
+  "timeUnit": "minutes-from-midnight",
+  "departureTime": 480,
+  "speedKmh": 30,
+  "penaltyPerMinute": 1000,
+  "timeWindowPolicy": "SOFT_SERVICE_START",
+  "allTimeWindowsSatisfied": true,
+  "message": "找到完整方案，尚未创建调度任务"
+}

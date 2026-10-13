@@ -1,0 +1,90 @@
+{
+  "testedAt": "2026-10-12T11:42:49.688Z",
+  "elapsedMs": 123,
+  "algorithm": "CVRP-GA",
+  "status": "FOUND",
+  "routes": [
+    {
+      "vehicleId": 1,
+      "orderIds": [
+        1,
+        2,
+        3
+      ],
+      "totalWeight": 300,
+      "totalVolume": 3,
+      "totalDistance": 6037.69809285,
+      "totalCost": null,
+      "stops": [
+        {
+          "seq": 1,
+          "orderId": 1,
+          "customerId": 1,
+          "lng": 116.41,
+          "lat": 39.9
+        },
+        {
+          "seq": 2,
+          "orderId": 2,
+          "customerId": 2,
+          "lng": 116.42,
+          "lat": 39.91
+        },
+        {
+          "seq": 3,
+          "orderId": 3,
+          "customerId": 3,
+          "lng": 116.41,
+          "lat": 39.92
+        }
+      ]
+    },
+    {
+      "vehicleId": 2,
+      "orderIds": [
+        4,
+        5,
+        6
+      ],
+      "totalWeight": 300,
+      "totalVolume": 3,
+      "totalDistance": 6037.69809285,
+      "totalCost": null,
+      "stops": [
+        {
+          "seq": 1,
+          "orderId": 4,
+          "customerId": 4,
+          "lng": 116.39,
+          "lat": 39.9
+        },
+        {
+          "seq": 2,
+          "orderId": 5,
+          "customerId": 5,
+          "lng": 116.38,
+          "lat": 39.91
+        },
+        {
+          "seq": 3,
+          "orderId": 6,
+          "customerId": 6,
+          "lng": 116.39,
+          "lat": 39.92
+        }
+      ]
+    }
+  ],
+  "unassignedOrderIds": [],
+  "totalDistance": 12075.3961857,
+  "usedVehicleCount": 2,
+  "distanceUnit": "m",
+  "previewOnly": true,
+  "distanceModel": "SPHERICAL",
+  "returnToDepot": true,
+  "depot": {
+    "lng": 116.4,
+    "lat": 39.9
+  },
+  "message": "找到完整方案，尚未创建调度任务"
+}

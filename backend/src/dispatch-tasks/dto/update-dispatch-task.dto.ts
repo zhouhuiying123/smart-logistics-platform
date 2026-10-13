@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsDateString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsDateString,
+  Min,
+} from 'class-validator';
 import { TaskStatus } from '@prisma/client';
 
 export class UpdateDispatchTaskDto {
@@ -8,17 +14,17 @@ export class UpdateDispatchTaskDto {
   @IsEnum(TaskStatus)
   status?: TaskStatus;
 
-  @ApiPropertyOptional({ description: '开始时间' })
+  @ApiPropertyOptional({ description: '系统自动记录，请勿提交' })
   @IsOptional()
   @IsDateString()
   startTime?: string;
 
-  @ApiPropertyOptional({ description: '结束时间' })
+  @ApiPropertyOptional({ description: '系统自动记录，请勿提交' })
   @IsOptional()
   @IsDateString()
   endTime?: string;
 
-  @ApiPropertyOptional({ description: '总距离（km）' })
+  @ApiPropertyOptional({ description: '总距离（米，球面距离）' })
   @IsOptional()
   @IsNumber()
   @Min(0)
