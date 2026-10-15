@@ -1,0 +1,21 @@
+{
+  "algorithm": "CVRP-GA",
+  "orderIds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "vehicleIds": [
+    1,
+    2
+  ],
+  "depot": {
+    "lng": 116.4,
+    "lat": 39.9
+  },
+  "returnToDepot": true,
+  "seed": 42
+}
