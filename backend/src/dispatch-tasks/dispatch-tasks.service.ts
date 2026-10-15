@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { TrackingGateway } from '../tracking/tracking.gateway';
 import {
   Injectable,
   NotFoundException,
@@ -17,7 +19,7 @@ import {
 
 @Injectable()
 export class DispatchTasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly tracking?: TrackingGateway) {}
 
   async create(dto: CreateDispatchTaskDto) {
     // 校验车辆存在且当前空闲
@@ -95,7 +97,7 @@ export class DispatchTasksService {
       throw new BadRequestException(
         '开始和结束时间由状态流转自动记录，请只提交 status',
       );
-    return this.transaction(async (tx) => {
+    const result = await this.transaction(async (tx) => {
       const task = await tx.dispatchTask.findUnique({
         where: { id },
         include: { stops: true },
@@ -205,6 +207,8 @@ export class DispatchTasksService {
         },
       });
     });
+    this.tracking?.publish(result);
+    return result;
   }
 
   async remove(id: number) {

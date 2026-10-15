@@ -62,7 +62,7 @@ export interface CvrpResult {
   objectiveScore?: number;
 }
 
-export function solveCvrp(input: CvrpInput, seed = 42): CvrpResult {
+export function solveCvrp(input: CvrpInput, seed = 42, observe?: (generation: number, best: CvrpResult) => void): CvrpResult {
   let state = seed >>> 0;
   const random = () => {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
@@ -187,6 +187,7 @@ export function solveCvrp(input: CvrpInput, seed = 42): CvrpResult {
   );
   for (let generation = 0; generation < 120; generation++) {
     population.sort(compare);
+    observe?.(generation, population[0].result);
     const next = population.slice(0, 2);
     const select = () => {
       const candidates = Array.from(
@@ -219,5 +220,7 @@ export function solveCvrp(input: CvrpInput, seed = 42): CvrpResult {
     }
     population = next;
   }
-  return population.sort(compare)[0].result;
+  const best = population.sort(compare)[0].result;
+  observe?.(120, best);
+  return best;
 }

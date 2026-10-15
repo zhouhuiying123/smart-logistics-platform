@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { TrackingGateway } from '../tracking/tracking.gateway';
 import {
   BadRequestException,
   ConflictException,
@@ -13,6 +15,7 @@ export class ConfirmService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly previews: PreviewStore,
+    @Optional() private readonly tracking?: TrackingGateway,
   ) {}
   async confirm(dto: ConfirmDto) {
     const preview = this.previews.acquire(dto.previewId);
@@ -98,6 +101,7 @@ export class ConfirmService {
         },
       );
       preview.consumed = true;
+      for (const task of tasks) this.tracking?.publish(task);
       return {
         previewId: dto.previewId,
         solutionId: dto.solutionId,

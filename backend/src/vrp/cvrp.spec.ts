@@ -30,6 +30,17 @@ describe('CVRP-GA', () => {
     }
     expect(solveCvrp(input)).toEqual(result);
   });
+  it('records actual generations without changing the seeded solution', () => {
+    const scores: number[] = [];
+    const result = solveCvrp(input, 42, (generation, best) => {
+      expect(generation).toBe(scores.length);
+      scores.push(best.totalDistance);
+    });
+    expect(result).toEqual(solveCvrp(input, 42));
+    expect(scores).toHaveLength(121);
+    expect(scores[120]).toBe(result.totalDistance);
+    expect(scores.every((score, i) => i === 0 || score <= scores[i - 1])).toBe(true);
+  });
   it('reports uncovered orders rather than overloading volume', () => {
     const result = solveCvrp({
       ...input,
