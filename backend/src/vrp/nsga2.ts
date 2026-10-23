@@ -1,4 +1,10 @@
-import { CvrpInput, CvrpRoute, stopTiming } from './cvrp';
+import { CvrpInput, CvrpRoute, stopTiming, twoOpt } from './cvrp';
+
+// ======== NSGA-II 超参数 ========
+const NSGA2_POP_SIZE = 60;
+const NSGA2_GENERATIONS = 150;
+const NSGA2_SWAP_MUTATION = 0.15;   // 顺序交换变异（原 0.4 偏高破坏好解）
+const NSGA2_ASSIGN_MUTATION = 0.20; // assignment 固定变异率（原 1/n 大规模时过小）
 
 export type Objectives = [number, number, number];
 export function dominates(a: Objectives, b: Objectives): boolean {
@@ -134,6 +140,35 @@ export function solveNsga2(input: CvrpInput, seed = 42) {
       }
       return true;
     });
+    // ======== 2-opt 局部搜索 ========
+    const pointOf = (id: number) =>
+      input.orders.find((o) => o.orderId === id)!.pointIndex;
+    for (const r of used) {
+      const optimized = twoOpt(r.orderIds, pointOf, input.distances);
+      if (optimized !== r.orderIds) {
+        r.orderIds = optimized;
+        let dist = 0;
+        let lastPt = 0;
+        r.schedule = [];
+        r.endTime = timing.departureTime;
+        for (const id of r.orderIds) {
+          const p = pointOf(id);
+          const seg = input.distances[lastPt][p];
+          dist += seg;
+          const order = input.orders.find((o) => o.orderId === id)!;
+          const arrival = r.endTime! + seg / ((timing.speedKmh * 1000) / 60);
+          const s = stopTiming(arrival, order);
+          r.schedule!.push(s);
+          r.endTime = s.departureTime;
+          lastPt = p;
+        }
+        if (input.returnToDepot) {
+          dist += input.distances[lastPt][0];
+          r.endTime! += input.distances[lastPt][0] / ((timing.speedKmh * 1000) / 60);
+        }
+        r.totalDistance = dist;
+      }
+    }
     return {
       order,
       assignment,
@@ -152,14 +187,14 @@ export function solveNsga2(input: CvrpInput, seed = 42) {
     };
   };
   const base = input.orders.map((_, i) => i),
-    size = 48;
+    size = NSGA2_POP_SIZE;
   let pop = Array.from({ length: size }, (_, i) =>
     evaluate(
       i === 0 ? base : shuffle(base),
       base.map((j) => (i < m ? i : i === m ? j % m : Math.floor(random() * m))),
     ),
   );
-  for (let generation = 0; generation < 100; generation++) {
+  for (let generation = 0; generation < NSGA2_GENERATIONS; generation++) {
     fronts(pop);
     const tournament = () => {
       const a = pop[Math.floor(random() * size)],
@@ -181,13 +216,15 @@ export function solveNsga2(input: CvrpInput, seed = 42) {
       const assignment = a.assignment.map((v, i) =>
         random() < 0.5 ? v : b.assignment[i],
       );
-      if (n > 1 && random() < 0.4) {
+      // 顺序交换变异
+      if (n > 1 && random() < NSGA2_SWAP_MUTATION) {
         const i = Math.floor(random() * n),
           j = Math.floor(random() * n);
         [order[i], order[j]] = [order[j], order[i]];
       }
+      // assignment 固定变异率
       for (let i = 0; i < n; i++)
-        if (random() < 1 / n) assignment[i] = Math.floor(random() * m);
+        if (random() < NSGA2_ASSIGN_MUTATION) assignment[i] = Math.floor(random() * m);
       children.push(evaluate(order, assignment));
     }
     const next: Candidate[] = [];

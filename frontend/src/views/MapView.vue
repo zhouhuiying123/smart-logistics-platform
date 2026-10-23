@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+// 百度地图 BMapGL 全局对象（由 index.html <script> 加载）
+declare const BMapGL: any
 import { ordersApi, type Order } from '@/api/orders'
 import { vehiclesApi, type Vehicle } from '@/api/vehicles'
 import { driversApi, type Driver } from '@/api/drivers'
 import { dispatchApi, type DispatchTask } from '@/api/dispatch'
 import { vrpApi, type OptimizeResult, type ConfirmRequest } from '@/api/vrp'
 
+// 辅助：生成带颜色的圆形 SVG data URI 图标（用于 BMapGL.Marker）
+function makeCircleIcon(color: string, size = 18) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${color}" stroke="white" stroke-width="2"/></svg>`
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)))
+}
+
 // ======== 状态 ========
 const mapContainer = ref<HTMLElement | null>(null)
-let map: L.Map | null = null
-let ordersLayer: L.LayerGroup | null = null
-let tasksLayer: L.LayerGroup | null = null
-let routeLayer: L.LayerGroup | null = null
+let map: any = null  // BMapGL.Map
+// 覆盖物集合，BMapGL.Map 直接 addOverlay/removeOverlay
+const ordersOverlays: any[] = []
+const routeOverlays: any[] = []
 
 const orders = ref<Order[]>([])
 const vehicles = ref<Vehicle[]>([])
@@ -58,37 +64,48 @@ async function loadAll() {
 // ======== 地图 ========
 function initMap() {
   if (!mapContainer.value || map) return
-  map = L.map(mapContainer.value, { zoomControl: true }).setView([30.0, 120.0], 12)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 18,
-  }).addTo(map)
-  ordersLayer = L.layerGroup().addTo(map)
-  tasksLayer = L.layerGroup().addTo(map)
-  routeLayer = L.layerGroup().addTo(map)
+  // BMapGL.Map 构造，不需要 tileLayer
+  map = new BMapGL.Map(mapContainer.value, { enableMapType: false })
+  map.centerAndZoom(new BMapGL.Point(120.0, 30.0), 12)  // 注意：BMapGL.Point(lng, lat)
+  map.enableScrollWheelZoom(true)
+  map.addControl(new BMapGL.ZoomControl())
 }
 
 // ======== 订单点 ========
 function drawOrders() {
-  ordersLayer?.clearLayers()
+  if (!map) return
+  ordersOverlays.forEach((o) => map!.removeOverlay(o))
+  ordersOverlays.length = 0
   orders.value.forEach((o) => {
     if (!o.customer) return
+    const c = o.customer  // 提取到局部变量，闭包内 TS 不再报 undefined
     const color = statusColor(o.status)
-    const icon = L.divIcon({
-      className: 'order-marker',
-      html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
-      iconSize: [14, 14],
+    const point = new BMapGL.Point(c.lng, c.lat)
+    const marker = new BMapGL.Marker(point)
+    const icon = new BMapGL.Icon(
+      makeCircleIcon(color),
+      new BMapGL.Size(18, 18),
+      { anchor: new BMapGL.Size(9, 9) }
+    )
+    marker.setIcon(icon)
+    marker.addEventListener('click', () => {
+      const info = new BMapGL.InfoWindow(
+        `<b>${c.name}</b><br/>订单 #${o.id} · ${o.status}<br/>${c.address ?? ''}`,
+        { width: 220, height: 0 }
+      )
+      map!.openInfoWindow(info, point)
     })
-    L.marker([o.customer.lat, o.customer.lng], { icon })
-      .bindPopup(`<b>${o.customer.name}</b><br/>订单 #${o.id} · ${o.status}<br/>${o.customer.address ?? ''}`)
-      .addTo(ordersLayer!)
+    map.addOverlay(marker)
+    ordersOverlays.push(marker)
   })
 }
 
 // ======== 任务路线 ========
 async function drawTasks() {
-  tasksLayer?.clearLayers()
-  routeLayer?.clearLayers()
+  if (!map) return
+  routeOverlays.forEach((o) => map!.removeOverlay(o))
+  routeOverlays.length = 0
+  const allPoints: any[] = []
   for (const task of tasks.value) {
     if (!task.stops || task.stops.length === 0) {
       try {
@@ -97,20 +114,32 @@ async function drawTasks() {
       } catch { /* ignore */ }
     }
     if (!task.stops?.length) continue
-    const latlngs = task.stops.map((s) => [s.lat, s.lng] as [number, number])
-    L.polyline(latlngs, { color: taskPolylineColor(task.status), weight: 4, opacity: 0.7 })
-      .addTo(routeLayer!)
-      .bindTooltip(`任务 #${task.id} · ${task.status}`, { permanent: false })
+    const points = task.stops.map((s) => new BMapGL.Point(s.lng, s.lat))
+    allPoints.push(...points)
+    const poly = new BMapGL.Polyline(points, {
+      strokeColor: taskPolylineColor(task.status),
+      strokeWeight: 4,
+      strokeOpacity: 0.7,
+    })
+    poly.setTitle(`任务 #${task.id} · ${task.status}`)
+    map.addOverlay(poly)
+    routeOverlays.push(poly)
     task.stops.forEach((s, i) => {
-      L.circleMarker([s.lat, s.lng], { radius: 6, color: '#fff', fillColor: '#1f4e79', fillOpacity: 1, weight: 1 })
-        .bindPopup(`停靠点 ${i + 1}<br/>订单 #${s.orderId}<br/>${s.arrived ? '已送达' : '待送达'}`)
-        .addTo(tasksLayer!)
+      const circle = new BMapGL.Circle(new BMapGL.Point(s.lng, s.lat), 8,
+        { strokeColor: '#fff', strokeWeight: 1, fillColor: '#1f4e79', fillOpacity: 1 })
+      circle.addEventListener('click', () => {
+        const info = new BMapGL.InfoWindow(
+          `停靠点 ${i + 1}<br/>订单 #${s.orderId}<br/>${s.arrived ? '已送达' : '待送达'}`,
+          { width: 200, height: 0 }
+        )
+        map!.openInfoWindow(info, new BMapGL.Point(s.lng, s.lat))
+      })
+      map.addOverlay(circle)
+      routeOverlays.push(circle)
     })
   }
-  // 自动适配视图
-  if (routeLayer && routeLayer.getLayers().length > 0) {
-    const group = L.featureGroup([...routeLayer.getLayers(), ...tasksLayer.getLayers()])
-    map?.fitBounds(group.getBounds().pad(0.2))
+  if (allPoints.length > 0) {
+    map.setViewport(allPoints)
   }
 }
 
@@ -152,26 +181,44 @@ async function runOptimize() {
 }
 
 function drawSelectedSolution() {
-  routeLayer?.clearLayers()
+  if (!map) return
+  routeOverlays.forEach((o) => map!.removeOverlay(o))
+  routeOverlays.length = 0
   if (!preview.value || !selectedSolution.value) return
   const sol = preview.value.solutions.find((s) => s.id === selectedSolution.value)
   if (!sol) return
   const palette = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c']
+  const allPoints: any[] = []
   sol.vehicles.forEach((vr, i) => {
-    const latlngs = vr.stops.map((s) => [s.lat, s.lng] as [number, number])
-    if (latlngs.length === 0) return
+    const points = vr.stops.map((s) => new BMapGL.Point(s.lng, s.lat))
+    if (points.length === 0) return
+    allPoints.push(...points)
     const color = palette[i % palette.length]
-    L.polyline(latlngs, { color, weight: 4, dashArray: '6 6', opacity: 0.8 })
-      .addTo(routeLayer!)
-      .bindTooltip(`车辆 #${vr.vehicleId} · ${vr.distance.toFixed(0)}m`, { permanent: false })
+    const poly = new BMapGL.Polyline(points, {
+      strokeColor: color,
+      strokeWeight: 4,
+      strokeDashArray: '6,6',
+      strokeOpacity: 0.8,
+    })
+    poly.setTitle(`车辆 #${vr.vehicleId} · ${vr.distance.toFixed(0)}m`)
+    map.addOverlay(poly)
+    routeOverlays.push(poly)
     vr.stops.forEach((s, j) => {
-      L.circleMarker([s.lat, s.lng], { radius: 5, color: '#fff', fillColor: color, fillOpacity: 1, weight: 1 })
-        .bindPopup(`车辆 #${vr.vehicleId}<br/>第 ${j + 1} 站<br/>订单 #${s.orderId}`)
-        .addTo(routeLayer!)
+      const pt = new BMapGL.Point(s.lng, s.lat)
+      const circle = new BMapGL.Circle(pt, 7,
+        { strokeColor: '#fff', strokeWeight: 1, fillColor: color, fillOpacity: 1 })
+      circle.addEventListener('click', () => {
+        const info = new BMapGL.InfoWindow(
+          `车辆 #${vr.vehicleId}<br/>第 ${j + 1} 站<br/>订单 #${s.orderId}`,
+          { width: 200, height: 0 }
+        )
+        map!.openInfoWindow(info, pt)
+      })
+      map.addOverlay(circle)
+      routeOverlays.push(circle)
     })
   })
-  const group = L.featureGroup(routeLayer!.getLayers())
-  map?.fitBounds(group.getBounds().pad(0.2))
+  if (allPoints.length > 0) map.setViewport(allPoints)
 }
 
 watch(selectedSolution, drawSelectedSolution)
@@ -190,7 +237,7 @@ async function confirmSolution() {
     toast.value = `已创建 ${(res as any).taskIds?.length ?? 0} 个调度任务`
     preview.value = null
     selectedSolution.value = ''
-    routeLayer?.clearLayers()
+    routeOverlays.forEach((o) => map?.removeOverlay(o)); routeOverlays.length = 0
     await loadAll()
     await drawTasks()
   } catch (e: any) {
@@ -233,7 +280,7 @@ onMounted(async () => {
       <section class="group">
         <div class="group-title">订单 ({{ orders.length }})</div>
         <label class="toggle">
-          <input type="checkbox" :checked="selectedOrderIds.length === orders.length" @change="selectedOrderIds = $event.target.checked ? orders.map(o=>o.id) : []" />
+          <input type="checkbox" :checked="selectedOrderIds.length === orders.length" @change="selectedOrderIds = ($event.target as HTMLInputElement).checked ? orders.map(o=>o.id) : []" />
           全选
         </label>
         <div class="scroll-list">
@@ -289,7 +336,7 @@ onMounted(async () => {
         </button>
       </div>
 
-      <button class="btn ghost mt" @click="drawTasks">🔄 刷新任务路线</button>
+      <button class="btn ghost mt" @click="async () => { await loadAll(); drawOrders(); drawTasks() }">🔄 刷新任务路线</button>
     </aside>
 
     <!-- 右侧地图 -->

@@ -20,6 +20,7 @@ export interface DispatchTask {
   endTime?: string
   totalDist?: number
   totalCost?: number
+  createdAt?: string
   vehicle?: { id: number; plate: string; status: string }
   driver?: { id: number; name: string; status: string }
   stops?: DispatchStop[]
