@@ -58,11 +58,23 @@ async function loadAll() {
 // ======== 地图 ========
 function initMap() {
   if (!mapContainer.value || map) return
-  map = L.map(mapContainer.value, { zoomControl: true }).setView([30.0, 120.0], 12)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 18,
-  }).addTo(map)
+  map = L.map(mapContainer.value, { zoomControl: true }).setView([30.27, 120.19], 12)
+  // 高德底图（国内可直连）；加载失败时回退 OpenStreetMap
+  const gaode = L.tileLayer(
+    'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+    { subdomains: ['1', '2', '3', '4'], attribution: '© 高德地图', maxZoom: 18 },
+  )
+  let tileErrors = 0
+  gaode.on('tileerror', () => {
+    if (++tileErrors === 3) {
+      map?.removeLayer(gaode)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map!)
+    }
+  })
+  gaode.addTo(map)
   ordersLayer = L.layerGroup().addTo(map)
   tasksLayer = L.layerGroup().addTo(map)
   routeLayer = L.layerGroup().addTo(map)
