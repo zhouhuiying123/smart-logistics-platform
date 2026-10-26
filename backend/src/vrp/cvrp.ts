@@ -86,10 +86,15 @@ export interface CvrpResult {
 }
 
 // ======== 2-opt 局部搜索：消除单条路线内的交叉 ========
-export function twoOpt(orderIds: number[], pointOf: (id: number) => number, distances: number[][]): number[] {
+export function twoOpt(
+  orderIds: number[],
+  pointOf: (id: number) => number,
+  distances: number[][],
+  returnToDepot = true,
+): number[] {
   if (orderIds.length < 4) return orderIds;
-  const pts = orderIds.map(pointOf);
-  let best = pts;
+  // Keep order IDs: multiple orders can share a customer and point index.
+  let best = [...orderIds];
   let improved = true;
   const dist = (p: number, q: number) => distances[p][q];
   while (improved) {
@@ -97,9 +102,29 @@ export function twoOpt(orderIds: number[], pointOf: (id: number) => number, dist
     for (let i = 0; i < best.length - 1; i++) {
       for (let j = i + 1; j < best.length; j++) {
         // 反转 [i, j] 段
-        const candidate = [...best.slice(0, i), ...best.slice(i, j + 1).reverse(), ...best.slice(j + 1)];
-        const oldD = dist(best[i === 0 ? 0 : i - 1], best[i]) + dist(best[j], best[j + 1] ?? 0);
-        const newD = dist(candidate[i === 0 ? 0 : i - 1], candidate[i]) + dist(candidate[j], candidate[j + 1] ?? 0);
+        const candidate = [
+          ...best.slice(0, i),
+          ...best.slice(i, j + 1).reverse(),
+          ...best.slice(j + 1),
+        ];
+        const previousPoint = (route: number[]) =>
+          i === 0 ? 0 : pointOf(route[i - 1]);
+        const nextPoint = (route: number[]) =>
+          j + 1 < route.length
+            ? pointOf(route[j + 1])
+            : returnToDepot
+              ? 0
+              : undefined;
+        const oldNext = nextPoint(best);
+        const newNext = nextPoint(candidate);
+        const oldD =
+          dist(previousPoint(best), pointOf(best[i])) +
+          (oldNext === undefined ? 0 : dist(pointOf(best[j]), oldNext));
+        const newD =
+          dist(previousPoint(candidate), pointOf(candidate[i])) +
+          (newNext === undefined
+            ? 0
+            : dist(pointOf(candidate[j]), newNext));
         if (newD < oldD - 1e-6) {
           best = candidate;
           improved = true;
@@ -107,10 +132,7 @@ export function twoOpt(orderIds: number[], pointOf: (id: number) => number, dist
       }
     }
   }
-  // 转回 orderId
-  const idOf = new Map<number, number>();
-  orderIds.forEach((id) => idOf.set(pointOf(id), id));
-  return best.map((p) => idOf.get(p)!);
+  return best;
 }
 
 // ======== Clarke-Wright Savings：生成高质量初始解 ========
@@ -241,7 +263,12 @@ export function solveCvrp(input: CvrpInput, seed = 42, observe?: (generation: nu
     const pointOf = (id: number) =>
       input.orders.find((o) => o.orderId === id)!.pointIndex;
     for (const r of used) {
-      const optimized = twoOpt(r.orderIds, pointOf, input.distances);
+      const optimized = twoOpt(
+        r.orderIds,
+        pointOf,
+        input.distances,
+        input.returnToDepot,
+      );
       if (optimized !== r.orderIds) {
         r.orderIds = optimized;
         // 重算距离与时间窗

@@ -1,4 +1,4 @@
-import { solveCvrp, CvrpInput } from './cvrp';
+import { solveCvrp, CvrpInput, twoOpt } from './cvrp';
 
 describe('CVRP-GA', () => {
   const input: CvrpInput = {
@@ -73,6 +73,41 @@ describe('CVRP-GA', () => {
     });
     expect(result.status).toBe('FOUND');
     expect(result.totalDistance).toBe(100);
+  });
+  it('preserves separate orders that share a customer point during 2-opt', () => {
+    const duplicateCustomer: CvrpInput = {
+      orders: [1, 2, 3, 4, 5].map((orderId, i) => ({
+        orderId,
+        pointIndex: i < 2 ? 1 : i,
+        weight: 1,
+        volume: 1,
+      })),
+      vehicles: [{ vehicleId: 1, capacityW: 10, capacityV: 10 }],
+      distances: Array.from({ length: 6 }, (_, i) =>
+        Array.from({ length: 6 }, (_, j) => Math.abs(i - j) * 100),
+      ),
+      returnToDepot: true,
+    };
+    const result = solveCvrp(duplicateCustomer);
+    expect(result.status).toBe('FOUND');
+    expect(result.routes.flatMap((route) => route.orderIds).sort()).toEqual([
+      1, 2, 3, 4, 5,
+    ]);
+  });
+  it('does not optimize an open route as if it returns to the depot', () => {
+    const route = [1, 2, 3, 4];
+    const pointOf = (id: number) => id;
+    const distances = [
+      [0, 1, 1, 1, 100],
+      [1, 0, 1, 1, 1],
+      [1, 1, 0, 100, 1],
+      [1, 1, 100, 0, 1],
+      [100, 1, 1, 1, 0],
+    ];
+    const openRoute = twoOpt(route, pointOf, distances, false);
+    const closedRoute = twoOpt(route, pointOf, distances, true);
+    expect(openRoute).not.toEqual(closedRoute);
+    expect([...openRoute].sort()).toEqual(route);
   });
   it('handles 50 orders with complete coverage within 10 seconds', () => {
     const large: CvrpInput = {

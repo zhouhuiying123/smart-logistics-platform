@@ -19,7 +19,10 @@ import {
 
 @Injectable()
 export class DispatchTasksService {
-  constructor(private readonly prisma: PrismaService, @Optional() private readonly tracking?: TrackingGateway) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly tracking?: TrackingGateway,
+  ) {}
 
   async create(dto: CreateDispatchTaskDto) {
     // 校验车辆存在且当前空闲
@@ -58,7 +61,14 @@ export class DispatchTasksService {
   async findAll() {
     return this.prisma.dispatchTask.findMany({
       orderBy: { id: 'asc' },
-      include: { vehicle: true, driver: true },
+      include: {
+        vehicle: true,
+        driver: true,
+        stops: {
+          orderBy: { seq: 'asc' },
+          include: { order: { include: { customer: true } } },
+        },
+      },
     });
   }
 
@@ -68,7 +78,10 @@ export class DispatchTasksService {
       include: {
         vehicle: true,
         driver: true,
-        stops: { orderBy: { seq: 'asc' }, include: { order: true } },
+        stops: {
+          orderBy: { seq: 'asc' },
+          include: { order: { include: { customer: true } } },
+        },
       },
     });
     if (!t) throw new NotFoundException(`调度任务 ${id} 不存在`);
@@ -203,7 +216,10 @@ export class DispatchTasksService {
         include: {
           vehicle: true,
           driver: true,
-          stops: { orderBy: { seq: 'asc' }, include: { order: true } },
+          stops: {
+            orderBy: { seq: 'asc' },
+            include: { order: { include: { customer: true } } },
+          },
         },
       });
     });

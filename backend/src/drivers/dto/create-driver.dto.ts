@@ -1,5 +1,11 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsOptional, MaxLength, Matches } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 import { DriverStatus } from '@prisma/client';
 
 export class CreateDriverDto {
@@ -13,7 +19,10 @@ export class CreateDriverDto {
   @Matches(/^1[3-9]\d{9}$/, { message: '手机号格式不正确' })
   phone: string;
 
-  @ApiProperty({ example: '110101199001011234', description: '驾驶证号（唯一）' })
+  @ApiProperty({
+    example: '110101199001011234',
+    description: '驾驶证号（唯一）',
+  })
   @IsString()
   @MaxLength(30)
   license: string;
@@ -21,7 +30,10 @@ export class CreateDriverDto {
 
 export class UpdateDriverDto {
   @IsOptional() @IsString() @MaxLength(50) name?: string;
-  @IsOptional() @IsString() @Matches(/^1[3-9]\d{9}$/, { message: '手机号格式不正确' }) phone?: string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^1[3-9]\d{9}$/, { message: '手机号格式不正确' })
+  phone?: string;
   @IsOptional() @IsString() @MaxLength(30) license?: string;
   @IsOptional() @IsEnum(DriverStatus) status?: DriverStatus;
 }

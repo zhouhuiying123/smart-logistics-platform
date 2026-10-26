@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto, UpdateOrderDto } from './dto/create-order.dto';
 
@@ -7,8 +12,11 @@ export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateOrderDto) {
-    const customer = await this.prisma.customer.findUnique({ where: { id: dto.customerId } });
-    if (!customer) throw new BadRequestException(`客户 ${dto.customerId} 不存在`);
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: dto.customerId },
+    });
+    if (!customer)
+      throw new BadRequestException(`客户 ${dto.customerId} 不存在`);
 
     return this.prisma.order.create({
       data: { ...dto, priority: dto.priority ?? 0 },
@@ -33,16 +41,31 @@ export class OrdersService {
   }
 
   async update(id: number, dto: UpdateOrderDto) {
-    await this.findOne(id);
+    const current = await this.findOne(id);
+    if (current.status !== 'PENDING')
+      throw new ConflictException(
+        '只有待分配订单可以编辑；配送状态请通过调度任务流转',
+      );
     if (dto.customerId !== undefined) {
-      const c = await this.prisma.customer.findUnique({ where: { id: dto.customerId } });
+      const c = await this.prisma.customer.findUnique({
+        where: { id: dto.customerId },
+      });
       if (!c) throw new BadRequestException(`客户 ${dto.customerId} 不存在`);
     }
-    return this.prisma.order.update({ where: { id }, data: dto, include: { customer: true } });
+    return this.prisma.order.update({
+      where: { id },
+      data: dto,
+      include: { customer: true },
+    });
   }
 
   async remove(id: number) {
     await this.findOne(id);
+    const linkedStops = await this.prisma.dispatchStop.count({
+      where: { orderId: id },
+    });
+    if (linkedStops)
+      throw new ConflictException('该订单已有调度记录，不能删除');
     return this.prisma.order.delete({ where: { id } });
   }
 }
