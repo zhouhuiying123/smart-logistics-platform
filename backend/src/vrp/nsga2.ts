@@ -144,7 +144,12 @@ export function solveNsga2(input: CvrpInput, seed = 42) {
     const pointOf = (id: number) =>
       input.orders.find((o) => o.orderId === id)!.pointIndex;
     for (const r of used) {
-      const optimized = twoOpt(r.orderIds, pointOf, input.distances);
+      const optimized = twoOpt(
+        r.orderIds,
+        pointOf,
+        input.distances,
+        input.returnToDepot,
+      );
       if (optimized !== r.orderIds) {
         r.orderIds = optimized;
         let dist = 0;

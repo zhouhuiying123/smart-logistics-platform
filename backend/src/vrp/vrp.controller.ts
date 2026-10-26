@@ -39,7 +39,12 @@ export class VrpController {
   @ApiOperation({
     summary: 'CVRP-GA / VRPTW-GA / NSGA-II 路线优化预览',
     description:
-      '输入订单和车辆编号。CVRP 优化距离；VRPTW 同时惩罚服务开始迟于时间窗结束，提前到达等待，每订单计一次服务时长。FOUND 表示完整容量可行，不保证无迟到。时间为午夜起分钟数，可超过1440。只预览，距离为球面距离；totalCost 为 null，惩罚非金额。',
+      '输入待配送订单与空闲车辆编号，返回路线预览（**不产生任何数据变更**）。\n\n' +
+      '- **CVRP-GA**：以总距离为目标优化\n' +
+      '- **VRPTW-GA**：带时间窗，晚于时间窗结束受惩罚、提前到达等待、每单计服务时长\n' +
+      '- **NSGA-II**：多目标优化，返回 Pareto 方案集\n\n' +
+      '`status = FOUND` 表示容量完全可行；时间为午夜起分钟数（可超过 1440）；距离为球面距离；totalCost 为惩罚值而非金额。\n\n' +
+      '确认方案请调用 `POST /vrp/confirm`（预览 15 分钟内有效）。',
   })
   optimize(@Body() dto: OptimizeDto) {
     return this.vrp.optimize(dto);

@@ -1,5 +1,12 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
@@ -29,7 +36,7 @@ export class OrdersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: '更新订单（可改状态）' })
+  @ApiOperation({ summary: '编辑待分配订单；配送状态由调度任务流转' })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateOrderDto) {
     return this.service.update(id, dto);
   }

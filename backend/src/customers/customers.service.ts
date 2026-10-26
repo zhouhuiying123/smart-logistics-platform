@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCustomerDto, UpdateCustomerDto } from './dto/create-customer.dto';
+import {
+  CreateCustomerDto,
+  UpdateCustomerDto,
+} from './dto/create-customer.dto';
 
 @Injectable()
 export class CustomersService {
@@ -26,12 +34,21 @@ export class CustomersService {
   }
 
   async update(id: number, dto: UpdateCustomerDto) {
-    await this.findOne(id);
+    const current = await this.findOne(id);
+    const start = dto.timeWindowStart ?? current.timeWindowStart;
+    const end = dto.timeWindowEnd ?? current.timeWindowEnd;
+    if (start >= end)
+      throw new BadRequestException('timeWindowStart 必须小于 timeWindowEnd');
     return this.prisma.customer.update({ where: { id }, data: dto });
   }
 
   async remove(id: number) {
     await this.findOne(id);
+    const linkedOrders = await this.prisma.order.count({
+      where: { customerId: id },
+    });
+    if (linkedOrders)
+      throw new ConflictException('该客户仍有关联订单，不能删除');
     return this.prisma.customer.delete({ where: { id } });
   }
 }
