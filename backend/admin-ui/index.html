@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#08151c" />
+    <meta name="description" content="智慧物流配送与路径优化平台后台管理控制台" />
+    <title>运营总览 · 智慧物流调度中心</title>
+    <link rel="stylesheet" href="/admin/admin.css" />
+    <script src="/admin/admin.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="后台导航">
+        <a class="brand" href="/admin/" aria-label="智慧物流调度中心首页">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none"><path d="M20 3 36 12v16L20 37 4 28V12L20 3Z" stroke="currentColor" stroke-width="2.2"/><path d="m20 11 8 4.5v9L20 29l-8-4.5v-9L20 11Z" stroke="currentColor" stroke-width="2"/><path d="m4.8 12.5 15.2 9 15.2-9M20 22v14" stroke="currentColor" stroke-width="1.7"/></svg>
+          </span>
+          <span><strong>智慧物流</strong><small>调度管理中心</small></span>
+        </a>
+        <div class="nav-caption">工作台</div>
+        <nav class="side-nav" id="sideNav">
+          <button class="nav-item active" data-view="overview" type="button"><span class="nav-icon">◫</span>运营总览</button>
+          <div class="nav-caption nav-caption-spaced">业务管理</div>
+          <button class="nav-item" data-view="orders" type="button"><span class="nav-icon">▤</span>订单管理<span class="nav-count" id="pendingNav">—</span></button>
+          <button class="nav-item" data-view="customers" type="button"><span class="nav-icon">⌖</span>客户资料</button>
+          <button class="nav-item" data-view="vehicles" type="button"><span class="nav-icon">▰</span>车辆管理</button>
+          <button class="nav-item" data-view="drivers" type="button"><span class="nav-icon">♙</span>司机管理</button>
+          <button class="nav-item" data-view="tasks" type="button"><span class="nav-icon">⇢</span>调度任务</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <a class="docs-link" href="/api/docs" target="_blank" rel="noreferrer"><span class="nav-icon">↗</span>接口文档</a>
+          <div class="demo-note"><span class="demo-dot"></span><span>课程演示环境<br /><b>暂未启用登录鉴权</b></span></div>
+          <small class="sidebar-version">智慧物流配送与路径优化平台</small>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div class="breadcrumb"><span>后台管理</span><span class="crumb-sep">/</span><strong id="crumbTitle">运营总览</strong></div>
+          <div class="topbar-actions">
+            <span class="api-health" id="apiHealth" role="status"><i></i>正在连接</span>
+            <time class="clock" id="clock"></time>
+            <button class="icon-button" id="refreshButton" type="button" aria-label="刷新数据" title="刷新数据">↻</button>
+          </div>
+        </header>
+
+        <main class="main-content" id="mainContent" tabindex="-1">
+          <section class="page-heading">
+            <div><p class="eyebrow">杭州市 · 物流配送运营</p><h1 id="pageTitle">运营总览</h1><p class="page-subtitle" id="pageSubtitle">实时掌握订单履约与车辆运力，快速处理待办事项。</p></div>
+            <div class="heading-actions"><span class="date-chip" id="dateChip"></span><button class="button button-primary" id="createButton" type="button" hidden>＋ 新增记录</button></div>
+          </section>
+
+          <div id="pageBody" aria-busy="true">
+            <div class="loading-state"><span class="spinner"></span><span>正在读取业务数据…</span></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <dialog class="record-dialog" id="recordDialog" aria-labelledby="dialogTitle">
+      <form id="recordForm" novalidate>
+        <div class="dialog-head"><div><p class="eyebrow">业务资料</p><h2 id="dialogTitle">新增记录</h2></div><button class="icon-button dialog-close" type="button" data-close-dialog aria-label="关闭">×</button></div>
+        <div class="form-error" id="formError" role="alert" hidden></div>
+        <div class="form-grid" id="formFields"></div>
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog>取消</button><button class="button button-primary" id="saveButton" type="submit">保存记录</button></div>
+      </form>
+    </dialog>
+    <dialog class="record-dialog confirm-dialog" id="confirmDialog" aria-labelledby="confirmTitle">
+      <div class="confirm-icon" aria-hidden="true">!</div><h2 id="confirmTitle">确认删除这条记录？</h2><p id="confirmMessage">删除后无法恢复。</p><div class="dialog-actions"><button class="button button-quiet" type="button" data-cancel-confirm>取消</button><button class="button button-danger" id="confirmDeleteButton" type="button">确认删除</button></div>
+    </dialog>
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>
