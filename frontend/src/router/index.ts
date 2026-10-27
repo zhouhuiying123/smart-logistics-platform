@@ -4,7 +4,9 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', redirect: '/map' },
+    { path: '/data', name: 'data', component: () => import('@/views/DataView.vue'), meta: { title: '基础数据' } },
     { path: '/map', name: 'map', component: () => import('@/views/MapView.vue'), meta: { title: '地图可视化' } },
+    { path: '/tasks', name: 'tasks', component: () => import('@/views/TasksView.vue'), meta: { title: '调度任务' } },
     { path: '/dashboard', name: 'dashboard', component: () => import('@/views/Dashboard.vue'), meta: { title: '运营仪表盘' } },
   ],
 })

@@ -4,6 +4,7 @@ export interface OptimizeRequest {
   orderIds: number[]
   vehicleIds: number[]
   algorithm?: 'CVRP-GA' | 'VRPTW-GA' | 'NSGA-II'
+  depot: { lng: number; lat: number }
 }
 
 export interface RouteStop {
@@ -15,7 +16,7 @@ export interface RouteStop {
 
 export interface VehicleRoute {
   vehicleId: number
-  distance: number
+  totalDistance: number
   stops: RouteStop[]
 }
 
@@ -27,8 +28,25 @@ export interface OptimizeResult {
     totalDistance: number
     totalCost: number | null
     feasible: boolean
-    vehicles: VehicleRoute[]
+    routes: VehicleRoute[]
   }>
+}
+
+export interface OptimizeResponse {
+  previewId?: string
+  previewExpiresAt?: string
+  status: 'FOUND' | 'NOT_FOUND'
+  algorithm: 'CVRP-GA' | 'VRPTW-GA' | 'NSGA-II'
+  solutionId?: string
+  routes?: VehicleRoute[]
+  solutions?: Array<{
+    solutionId: string
+    routes: VehicleRoute[]
+    totalDistance: number
+    totalCost?: number | null
+  }>
+  totalDistance?: number
+  totalCost?: number | null
 }
 
 export interface ConfirmRequest {
@@ -45,9 +63,9 @@ export interface DistancePoint {
 
 export const vrpApi = {
   optimize: (data: OptimizeRequest) =>
-    http.post<OptimizeResult>('/vrp/optimize', data),
+    http.post<OptimizeResponse>('/vrp/optimize', data),
   confirm: (data: ConfirmRequest) =>
-    http.post<{ message: string; taskIds: number[] }>('/vrp/confirm', data),
+    http.post<{ previewId: string; solutionId: string; tasks: Array<{ id: number }>; message: string }>('/vrp/confirm', data),
   distanceMatrix: (points: DistancePoint[]) =>
     http.post<number[][]>('/vrp/distance-matrix', { points }),
 }

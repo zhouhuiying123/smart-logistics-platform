@@ -4,11 +4,13 @@ import { io, Socket } from 'socket.io-client'
 const connected = ref(false)
 const events = ref<any[]>([])
 let socket: Socket | null = null
+let consumers = 0
 
 export function useTracking() {
   function connect() {
+    consumers += 1
     if (socket) return
-    socket = io('/', {
+    socket = io('/tracking', {
       path: '/socket.io',
       transports: ['websocket', 'polling'],
     })
@@ -21,6 +23,8 @@ export function useTracking() {
   }
 
   function disconnect() {
+    consumers = Math.max(0, consumers - 1)
+    if (consumers > 0) return
     socket?.disconnect()
     socket = null
     connected.value = false
@@ -29,5 +33,5 @@ export function useTracking() {
   onMounted(connect)
   onUnmounted(disconnect)
 
-  return { connected, events, socket }
+  return { connected, events }
 }

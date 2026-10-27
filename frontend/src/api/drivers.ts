@@ -11,4 +11,7 @@ export interface Driver {
 export const driversApi = {
   findAll: () => http.get<Driver[]>('/drivers'),
   findOne: (id: number) => http.get<Driver>(`/drivers/${id}`),
+  create: (data: Partial<Driver>) => http.post<Driver>('/drivers', data),
+  update: (id: number, data: Partial<Driver>) => http.patch<Driver>(`/drivers/${id}`, data),
+  remove: (id: number) => http.delete(`/drivers/${id}`),
 }
