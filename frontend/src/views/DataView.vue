@@ -25,6 +25,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: 'drivers', label: '司机' },
 ]
 const activeTab = ref<Tab>('customers')
+const orderStatusFilter = ref('ALL')
 const customers = ref<Customer[]>([])
 const orders = ref<Order[]>([])
 const vehicles = ref<Vehicle[]>([])
@@ -72,7 +73,9 @@ const columns = computed(() => {
 
 const records = computed<Row[]>(() => {
   if (activeTab.value === 'customers') return customers.value
-  if (activeTab.value === 'orders') return orders.value.map((order) => ({ ...order, customerName: order.customer?.name ?? `客户 #${order.customerId}` }))
+  if (activeTab.value === 'orders') return orders.value
+    .filter((o) => orderStatusFilter.value === 'ALL' || o.status === orderStatusFilter.value)
+    .map((order) => ({ ...order, customerName: order.customer?.name ?? `客户 #${order.customerId}` }))
   if (activeTab.value === 'vehicles') return vehicles.value
   return drivers.value
 })
@@ -90,7 +93,7 @@ function resetDraft() {
   Object.assign(draft, values)
 }
 
-watch(activeTab, () => { error.value = ''; notice.value = ''; resetDraft() })
+watch(activeTab, () => { error.value = ''; notice.value = ''; orderStatusFilter.value = 'ALL'; resetDraft() })
 
 async function loadAll() {
   const [customerRows, orderRows, vehicleRows, driverRows] = await Promise.all([
@@ -203,7 +206,14 @@ onMounted(async () => {
         <p v-if="error" class="error">{{ error }}</p>
       </section>
       <section class="card table-card">
-        <div class="table-heading"><h2>{{ tabs.find((tab) => tab.key === activeTab)?.label }}列表</h2><span>{{ records.length }} 条</span></div>
+        <div class="table-heading">
+          <h2>{{ tabs.find((tab) => tab.key === activeTab)?.label }}列表</h2>
+          <div v-if="activeTab === 'orders'" class="status-filter">
+            <button :class="{ active: orderStatusFilter === 'ALL' }" @click="orderStatusFilter = 'ALL'">全部</button>
+            <button v-for="(label, key) in ORDER_STATUS_LABEL" :key="key" :class="{ active: orderStatusFilter === key }" @click="orderStatusFilter = key">{{ label }}</button>
+          </div>
+          <span>{{ records.length }} 条</span>
+        </div>
         <div class="table-scroll">
           <table>
             <thead><tr><th v-for="column in columns" :key="column.key">{{ column.label }}</th><th>操作</th></tr></thead>
@@ -261,6 +271,14 @@ onMounted(async () => {
 .error { color: var(--c-danger); white-space: pre-wrap; }
 .muted { color: var(--c-text-3); }
 .table-heading span { font-size: 13px; color: var(--c-text-3); }
+.status-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+.status-filter button {
+  border: 1px solid var(--c-line); background: var(--c-card); color: var(--c-text-2);
+  border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 12.5px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.status-filter button:hover { border-color: var(--c-accent); color: var(--c-primary); }
+.status-filter button.active { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
 .table-scroll { overflow: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
 th, td { border-bottom: 1px solid var(--c-line); padding: 11px 10px; text-align: left; white-space: nowrap; }

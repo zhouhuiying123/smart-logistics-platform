@@ -46,12 +46,46 @@ const stats = computed(() => {
     if (!t.createdAt) return false
     return new Date(t.createdAt).toDateString() === new Date().toDateString()
   }).length
+
+  const doneTasks = tasks.value.filter((t) => t.status === 'COMPLETED' && t.startTime && t.endTime)
+  const durations = doneTasks
+    .map((t) => (new Date(t.endTime!).getTime() - new Date(t.startTime!).getTime()) / 60000)
+    .filter((m) => m > 0)
+  const avgMinutesText = durations.length
+    ? (durations.reduce((sum, m) => sum + m, 0) / durations.length).toFixed(1)
+    : '—'
+
+  const windowEndMap = new Map<number, number>()
+  for (const o of orders.value) {
+    const end = o.customer?.timeWindowEnd
+    if (typeof end === 'number') windowEndMap.set(o.id, end)
+  }
+  let checkedStops = 0
+  let onTimeStops = 0
+  for (const t of tasks.value) {
+    if (t.status !== 'COMPLETED' || !t.endTime || !t.stops?.length) continue
+    const endAt = new Date(t.endTime)
+    const endMinute = endAt.getHours() * 60 + endAt.getMinutes()
+    for (const s of t.stops) {
+      const windowEnd = windowEndMap.get(s.orderId)
+      if (windowEnd === undefined) continue
+      checkedStops += 1
+      if (endMinute <= windowEnd) onTimeStops += 1
+    }
+  }
+  const windowRateText = checkedStops ? ((onTimeStops / checkedStops) * 100).toFixed(1) : '—'
+
   return {
     total,
     inTransit,
     delivered,
     doneRate,
     todayTasks,
+    doneTasks: doneTasks.length,
+    avgMinutesText,
+    windowRateText,
+    checkedStops,
+    onTimeStops,
     idles: vehicles.value.filter((v) => v.status === 'IDLE').length,
     availDrivers: drivers.value.filter((d) => d.status === 'AVAILABLE').length,
   }
@@ -159,6 +193,16 @@ onMounted(loadAll)
         <div class="card-value">{{ stats.idles }} <span class="divider">|</span> {{ stats.availDrivers }}</div>
         <div class="card-sub">运力储备</div>
       </div>
+      <div class="card accent-5">
+        <div class="card-label">平均配送耗时</div>
+        <div class="card-value">{{ stats.avgMinutesText }}<span v-if="stats.avgMinutesText !== '—'" class="pct">min</span></div>
+        <div class="card-sub">已完成任务 {{ stats.doneTasks }} 个，开始至完成平均时长</div>
+      </div>
+      <div class="card accent-6">
+        <div class="card-label">时间窗满足率</div>
+        <div class="card-value">{{ stats.windowRateText }}<span v-if="stats.windowRateText !== '—'" class="pct">%</span></div>
+        <div class="card-sub">达标停靠点 {{ stats.onTimeStops }} / {{ stats.checkedStops }}</div>
+      </div>
     </section>
 
     <!-- 图表行 1 -->
@@ -198,7 +242,7 @@ onMounted(loadAll)
 
 <style scoped>
 .dashboard { display: flex; flex-direction: column; gap: 20px; }
-.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .card {
   background: var(--c-card); border-radius: var(--radius); padding: 22px 24px;
   box-shadow: var(--shadow);
