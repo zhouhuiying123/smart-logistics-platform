@@ -93,11 +93,13 @@ async function main() {
     const history = [
       {
         vehicleIndex: 3, driverIndex: 3, status: 'COMPLETED', orderIndex: 0,
-        totalDist: 8200, startTime: new Date(now.getTime() - 86400000), endTime: new Date(now.getTime() - 82800000), arrived: true,
+        // 固定北京时间 2024-11-01 08:30–09:30，时长 60min；完成时刻当日分钟数 570 ≤ 所有客户 timeWindowEnd(900)，保证时间窗满足率稳定 100%
+        totalDist: 8200, startTime: new Date(2024, 10, 1, 8, 30, 0), endTime: new Date(2024, 10, 1, 9, 30, 0), arrived: true,
       },
       {
         vehicleIndex: 4, driverIndex: 4, status: 'STARTED', orderIndex: 2,
-        totalDist: 5100, startTime: new Date(now.getTime() - 1800000), endTime: null, arrived: false,
+        // 5 分钟前开始，让车辆在演示时恰好行驶于路线中段
+        totalDist: 5100, startTime: new Date(now.getTime() - 5 * 60000), endTime: null, arrived: false,
       },
       {
         vehicleIndex: 5, driverIndex: 5, status: 'ASSIGNED', orderIndex: 1,
