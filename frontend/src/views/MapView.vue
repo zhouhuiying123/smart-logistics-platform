@@ -208,6 +208,7 @@ async function drawTasks() {
   if (allPoints.length > 0) {
     map.setViewport(allPoints)
   }
+  startVehicleTracking()
 }
 
 function statusColor(s: Order['status']) {
@@ -337,6 +338,66 @@ watch(selectedSolution, (solutionId) => {
   }))
 })
 
+// ======== 配送中车辆模拟定位（沿路线按开始时间插值移动，每 2s 刷新）========
+let vehicleRefreshTimer: ReturnType<typeof setInterval> | null = null
+const vehicleMarkers: any[] = []
+
+function clearVehicleMarkers() {
+  vehicleMarkers.forEach((m) => map?.removeOverlay(m))
+  vehicleMarkers.length = 0
+}
+
+function routeTotalDistance(points: any[]): number {
+  let total = 0
+  for (let i = 1; i < points.length; i++) total += map.getDistance(points[i - 1], points[i])
+  return total
+}
+
+function positionAtProgress(points: any[], progress: number) {
+  if (points.length < 2) return { point: points[0], percent: 0, meters: 0 }
+  const total = routeTotalDistance(points)
+  const target = total * Math.min(1, Math.max(0, progress))
+  let acc = 0
+  for (let i = 1; i < points.length; i++) {
+    const seg = map.getDistance(points[i - 1], points[i])
+    if (acc + seg >= target) {
+      const sp = seg > 0 ? (target - acc) / seg : 0
+      return {
+        point: new BMap.Point(
+          points[i - 1].lng + (points[i].lng - points[i - 1].lng) * sp,
+          points[i - 1].lat + (points[i].lat - points[i - 1].lat) * sp,
+        ),
+        percent: Math.round((target / total) * 100),
+        meters: Math.round(target),
+      }
+    }
+    acc += seg
+  }
+  return { point: points[points.length - 1], percent: 100, meters: Math.round(total) }
+}
+
+function updateVehicleMarkers() {
+  if (!map) return
+  clearVehicleMarkers()
+  for (const task of tasks.value.filter((t) => t.status === 'STARTED' && t.startTime && t.stops?.length)) {
+    const points = [mapPoint(depot.lng, depot.lat), ...task.stops.map((s) => mapPoint(s.lng, s.lat)), mapPoint(depot.lng, depot.lat)]
+    const totalMeters = routeTotalDistance(points) || task.totalDist || 5000
+    const totalMs = (totalMeters / 30000) * 3600000  // 30km/h 估算总时长
+    const progress = Math.min(1, Math.max(0, (Date.now() - new Date(task.startTime!).getTime()) / totalMs))
+    const pos = positionAtProgress(points, progress)
+    const vehicle = vehicles.value.find((v) => v.id === task.vehicleId)
+    const driver = drivers.value.find((d) => d.id === task.driverId)
+    const marker = new BMap.Marker(pos.point, { icon: new BMap.Icon(makeCircleIcon('#d1660d', 20), new BMap.Size(20, 20), { anchor: new BMap.Size(10, 10) }) })
+    marker.setLabel(new BMap.Label(`${vehicle?.plate ?? `#${task.vehicleId}`}`, { offset: new BMap.Size(14, -6), style: { background: 'rgba(20,46,77,0.92)', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '11px' } }))
+    marker.addEventListener('click', () => map.openInfoWindow(new BMap.InfoWindow(`<b>${escapeHtml(vehicle?.plate ?? '')}</b><br/>司机：${escapeHtml(driver?.name ?? '')}<br/>模拟行驶进度：${pos.percent}%<br/>已行驶约 ${pos.meters}m`, { width: 220 }), pos.point))
+    map.addOverlay(marker)
+    vehicleMarkers.push(marker)
+  }
+}
+
+function startVehicleTracking() { stopVehicleTracking(); updateVehicleMarkers(); vehicleRefreshTimer = setInterval(updateVehicleMarkers, 2000) }
+function stopVehicleTracking() { if (vehicleRefreshTimer) { clearInterval(vehicleRefreshTimer); vehicleRefreshTimer = null } clearVehicleMarkers() }
+
 let refreshTimer: ReturnType<typeof setTimeout> | undefined
 watch(events, () => {
   if (refreshTimer) clearTimeout(refreshTimer)
@@ -409,7 +470,7 @@ onMounted(async () => {
   await drawTasks()
 })
 
-onUnmounted(() => { if (refreshTimer) clearTimeout(refreshTimer) })
+onUnmounted(() => { stopVehicleTracking(); if (refreshTimer) clearTimeout(refreshTimer) })
 </script>
 
 <template>
