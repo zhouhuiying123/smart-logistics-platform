@@ -1,5 +1,12 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { VehiclesService } from './vehicles.service';
@@ -29,7 +36,9 @@ export class VehiclesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: '更新车辆（可改状态）' })
+  @ApiOperation({
+    summary: '编辑车辆信息及空闲/维修状态；执行中状态由调度任务管理',
+  })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVehicleDto) {
     return this.service.update(id, dto);
   }

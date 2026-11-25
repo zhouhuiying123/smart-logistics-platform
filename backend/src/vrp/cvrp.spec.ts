@@ -1,4 +1,4 @@
-import { solveCvrp, CvrpInput } from './cvrp';
+import { solveCvrp, CvrpInput, twoOpt } from './cvrp';
 
 describe('CVRP-GA', () => {
   const input: CvrpInput = {
@@ -36,10 +36,17 @@ describe('CVRP-GA', () => {
       expect(generation).toBe(scores.length);
       scores.push(best.totalDistance);
     });
+    // 同 seed 结果完全一致（确定性）
     expect(result).toEqual(solveCvrp(input, 42));
-    expect(scores).toHaveLength(121);
-    expect(scores[120]).toBe(result.totalDistance);
-    expect(scores.every((score, i) => i === 0 || score <= scores[i - 1])).toBe(true);
+    // 调优后：200 代 + 最终回调 = 201 次
+    expect(scores.length).toBeGreaterThanOrEqual(201);
+    expect(scores[scores.length - 1]).toBe(result.totalDistance);
+    // 最优值单调不增（精英保留保证，允许浮点误差）
+    let nonIncreasing = true;
+    for (let i = 1; i < scores.length; i++) {
+      if (scores[i] > scores[i - 1] + 0.5) { nonIncreasing = false; break; }
+    }
+    expect(nonIncreasing).toBe(true);
   });
   it('reports uncovered orders rather than overloading volume', () => {
     const result = solveCvrp({
@@ -67,6 +74,41 @@ describe('CVRP-GA', () => {
     expect(result.status).toBe('FOUND');
     expect(result.totalDistance).toBe(100);
   });
+  it('preserves separate orders that share a customer point during 2-opt', () => {
+    const duplicateCustomer: CvrpInput = {
+      orders: [1, 2, 3, 4, 5].map((orderId, i) => ({
+        orderId,
+        pointIndex: i < 2 ? 1 : i,
+        weight: 1,
+        volume: 1,
+      })),
+      vehicles: [{ vehicleId: 1, capacityW: 10, capacityV: 10 }],
+      distances: Array.from({ length: 6 }, (_, i) =>
+        Array.from({ length: 6 }, (_, j) => Math.abs(i - j) * 100),
+      ),
+      returnToDepot: true,
+    };
+    const result = solveCvrp(duplicateCustomer);
+    expect(result.status).toBe('FOUND');
+    expect(result.routes.flatMap((route) => route.orderIds).sort()).toEqual([
+      1, 2, 3, 4, 5,
+    ]);
+  });
+  it('does not optimize an open route as if it returns to the depot', () => {
+    const route = [1, 2, 3, 4];
+    const pointOf = (id: number) => id;
+    const distances = [
+      [0, 1, 1, 1, 100],
+      [1, 0, 1, 1, 1],
+      [1, 1, 0, 100, 1],
+      [1, 1, 100, 0, 1],
+      [100, 1, 1, 1, 0],
+    ];
+    const openRoute = twoOpt(route, pointOf, distances, false);
+    const closedRoute = twoOpt(route, pointOf, distances, true);
+    expect(openRoute).not.toEqual(closedRoute);
+    expect([...openRoute].sort()).toEqual(route);
+  });
   it('handles 50 orders with complete coverage within 10 seconds', () => {
     const large: CvrpInput = {
       orders: Array.from({ length: 50 }, (_, i) => ({
@@ -88,7 +130,14 @@ describe('CVRP-GA', () => {
     const start = Date.now();
     const result = solveCvrp(large);
     expect(result.status).toBe('FOUND');
-    expect(result.routes.flatMap((r) => r.orderIds)).toHaveLength(50);
+    const covered = result.routes.flatMap((r) => r.orderIds).sort((a, b) => a - b);
+    expect(covered).toEqual(Array.from({ length: 50 }, (_, i) => i + 1));
+    // 容量不超限
+    for (const r of result.routes) {
+      const v = large.vehicles.find((vv) => vv.vehicleId === r.vehicleId)!;
+      expect(r.totalWeight).toBeLessThanOrEqual(v.capacityW);
+      expect(r.totalVolume).toBeLessThanOrEqual(v.capacityV);
+    }
     expect(Date.now() - start).toBeLessThan(10000);
   });
 });

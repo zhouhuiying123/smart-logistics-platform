@@ -16,24 +16,46 @@ export class CreateCustomerDto {
 
   @ApiProperty({ example: 116.326, description: '经度' })
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   lng: number;
 
   @ApiProperty({ example: 39.992, description: '纬度' })
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   lat: number;
 
-  @ApiProperty({ example: 480, description: '时间窗开始（分钟，0=00:00）', minimum: 0, maximum: 1440 })
+  @ApiProperty({
+    example: 480,
+    description: '时间窗开始（分钟，0=00:00）',
+    minimum: 0,
+    maximum: 1440,
+  })
   @IsNumber()
-  @Min(0) @Max(1440)
+  @Min(0)
+  @Max(1440)
   timeWindowStart: number;
 
-  @ApiProperty({ example: 600, description: '时间窗结束（分钟）', minimum: 0, maximum: 1440 })
+  @ApiProperty({
+    example: 600,
+    description: '时间窗结束（分钟）',
+    minimum: 0,
+    maximum: 1440,
+  })
   @IsNumber()
-  @Min(0) @Max(1440)
+  @Min(0)
+  @Max(1440)
   timeWindowEnd: number;
 
-  @ApiPropertyOptional({ example: 15, description: '服务时长（分钟）', default: 0 })
-  @IsOptional() @IsNumber() @Min(0)
+  @ApiPropertyOptional({
+    example: 15,
+    description: '服务时长（分钟）',
+    default: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   serviceTime?: number;
 }
 
@@ -41,8 +63,8 @@ export class UpdateCustomerDto {
   @IsOptional() @IsString() name?: string;
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsString() address?: string;
-  @IsOptional() @IsNumber() lng?: number;
-  @IsOptional() @IsNumber() lat?: number;
+  @IsOptional() @IsNumber() @Min(-180) @Max(180) lng?: number;
+  @IsOptional() @IsNumber() @Min(-90) @Max(90) lat?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(1440) timeWindowStart?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(1440) timeWindowEnd?: number;
   @IsOptional() @IsNumber() @Min(0) serviceTime?: number;

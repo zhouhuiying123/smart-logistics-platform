@@ -19,6 +19,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "experiment:vrp": "node scripts/experiment-vrp.cjs",
+    "seed:demo": "node scripts/seed-demo.cjs",
+    "seed:route-test": "node scripts/seed-route-test.cjs",
+    "seed:reset-demo": "node scripts/seed-reset-demo.cjs",
     "test:tracking": "node scripts/check-tracking.cjs",
     "experiment:curves": "node scripts/experiment-curves.cjs"
   },
